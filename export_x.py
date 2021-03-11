@@ -22,6 +22,7 @@ from math import radians, pi
 
 import bpy
 from mathutils import *
+from bpy_extras import node_shader_utils
 
 
 class DirectXExporter:
@@ -452,7 +453,7 @@ class MeshExportObject(ExportObject):
 
         # Create the mesh enumerator based on options
         MeshEnumerator = None
-        if (self.Config.ExportUVCoordinates and Mesh.uv_textures) or \
+        if (self.Config.ExportUVCoordinates and Mesh.uv_layers) or \
             (self.Config.ExportVertexColors and Mesh.vertex_colors) or \
             (self.Config.ExportSkinWeights):
             MeshEnumerator = MeshExportObject._UnrolledFacesMeshEnumerator(Mesh)
@@ -612,7 +613,7 @@ class MeshExportObject(ExportObject):
             self.SafeName))
 
     def __WriteMeshUVCoordinates(self, Mesh):
-        if not Mesh.uv_textures:
+        if not Mesh.uv_layers:
             return
 
         self.Exporter.File.Write("MeshTextureCoords {{ // {} UV coordinates\n" \
@@ -649,29 +650,25 @@ class MeshExportObject(ExportObject):
     def __WriteMeshMaterials(self, Mesh):
         def WriteMaterial(Exporter, Material):
             def GetMaterialTextureFileName(Material):
-                if Material:
-                    # Create a list of Textures that have type 'IMAGE'
-                    ImageTextures = [Material.texture_slots[TextureSlot].texture
-                        for TextureSlot in Material.texture_slots.keys()
-                        if Material.texture_slots[TextureSlot].texture.type ==
-                        'IMAGE']
-                    # Refine to only image file names if applicable
-                    ImageFiles = [bpy.path.basename(Texture.image.filepath)
-                        for Texture in ImageTextures
-                        if getattr(Texture.image, "source", "") == 'FILE']
-                    if ImageFiles:
-                        return ImageFiles[0]
-                return None
+                filename = None
+                mat_wrap = node_shader_utils.PrincipledBSDFWrapper(Material) if Material else None
+                if mat_wrap and mat_wrap.base_color_texture:
+                    image = mat_wrap.base_color_texture.image
+                    if image and image.source == 'FILE':
+                        filename = bpy.path.basename(image.filepath)
+                return filename
 
             Exporter.File.Write("Material {} {{\n".format(
                 Util.SafeName(Material.name)))
             Exporter.File.Indent()
 
-            Diffuse = list(Vector(Material.diffuse_color) *
-                Material.diffuse_intensity)
-            Diffuse.append(Material.alpha)
-            # Map Blender's range of 1 - 511 to 0 - 1000
-            Specularity = 1000 * (Material.specular_hardness - 1.0) / 510.0
+            Diffuse = list(Vector(Material.diffuse_color))
+
+            # specular_hardness removed in 2.8x
+            # calculate specularity from roughness
+            # Ref: io_scene_obj/export_obj.py
+            Specularity = (1.0 - Material.roughness) * 30
+            Specularity *= Specularity
             Specular = list(Vector(Material.specular_color) *
                 Material.specular_intensity)
 
@@ -725,11 +722,13 @@ class MeshExportObject(ExportObject):
                 Util.SafeName(Material.name)))
             Exporter.File.Indent()
 
-            Diffuse = list(Vector(Material.diffuse_color) *
-                Material.diffuse_intensity)
-            Diffuse.append(Material.alpha)
-            # Map Blender's range of 1 - 511 to 0 - 1000
-            Specularity = 1000 * (Material.specular_hardness - 1.0) / 510.0
+            Diffuse = list(Vector(Material.diffuse_color))
+
+            # specular_hardness removed in 2.8x
+            # calculate specularity from roughness
+            # Ref: io_scene_obj/export_obj.py
+            Specularity = (1.0 - Material.roughness) * 30
+            Specularity *= Specularity
             Specular = list(Vector(Material.specular_color) *
                 Material.specular_intensity)
 
@@ -770,7 +769,7 @@ class MeshExportObject(ExportObject):
 
         for Index, Polygon in enumerate(Mesh.polygons):
             MaterialKey = GetMaterialKey(Materials[Polygon.material_index],
-                Mesh.uv_textures.active, Index)
+                Mesh.uv_layers.active, Index)
 
             if MaterialKey in MaterialIndexMap:
                 MaterialIndices[Index] = MaterialIndexMap[MaterialKey]

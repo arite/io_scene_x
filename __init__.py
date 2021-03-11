@@ -21,8 +21,8 @@
 bl_info = {
     "name": "DirectX X Format",
     "author": "Chris Foster",
-    "version": (3, 1, 0),
-    "blender": (2, 69, 0),
+    "version": (4, 0, 0),
+    "blender": (2, 80, 0),
     "location": "File > Export > DirectX (.x)",
     "description": "Export mesh vertices, UV's, materials, textures, "
                    "vertex colors, armatures, empties, and actions.",
@@ -174,13 +174,13 @@ def menu_func(self, context):
 
 
 def register():
-    bpy.utils.register_module(__name__)
+    bpy.utils.register_class(ExportDirectX)
 
     bpy.types.TOPBAR_MT_file_export.append(menu_func)
 
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
+    bpy.utils.unregister_class(ExportDirectX)
 
     bpy.types.TOPBAR_MT_file_export.remove(menu_func)
 
