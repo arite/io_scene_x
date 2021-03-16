@@ -20,7 +20,7 @@
 
 bl_info = {
     "name": "DirectX X Format",
-    "author": "Chris Foster",
+    "author": "Chris Foster, Arite",
     "version": (4, 0, 0),
     "blender": (2, 80, 0),
     "location": "File > Export > DirectX (.x)",
