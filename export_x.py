@@ -40,10 +40,10 @@ class DirectXExporter:
         self.SystemMatrix = Matrix()
 
         if self.Config.CoordinateSystem == 'LEFT_HANDED':
-            self.SystemMatrix *= Matrix.Scale(-1, 4, Vector((0, 0, 1)))
+            self.SystemMatrix @= Matrix.Scale(-1, 4, Vector((0, 0, 1)))
 
         if self.Config.UpAxis == 'Y':
-            self.SystemMatrix *= Matrix.Rotation(radians(-90), 4, 'X')
+            self.SystemMatrix @= Matrix.Rotation(radians(-90), 4, 'X')
 
         self.Log("Done")
 
@@ -854,8 +854,8 @@ class MeshExportObject(ExportObject):
 
                     self.BoneMatrix = ArmatureObject.data.bones[BoneName] \
                         .matrix_local.inverted()
-                    self.BoneMatrix *= ArmatureObject.matrix_world.inverted()
-                    self.BoneMatrix *= BlenderObject.matrix_world
+                    self.BoneMatrix @= ArmatureObject.matrix_world.inverted()
+                    self.BoneMatrix @= BlenderObject.matrix_world
 
                 def AddVertex(self, Index, Weight):
                     self.Indices.append(Index)
@@ -1001,12 +1001,12 @@ class ArmatureExportObject(ExportObject):
             if self.Config.ExportRestBone:
                 if Bone.parent:
                     BoneMatrix = Bone.parent.matrix_local.inverted()
-                BoneMatrix *= Bone.matrix_local
+                BoneMatrix @= Bone.matrix_local
             else:
                 PoseBone = self.BlenderObject.pose.bones[Bone.name]
                 if Bone.parent:
                     BoneMatrix = PoseBone.parent.matrix.inverted()
-                BoneMatrix *= PoseBone.matrix
+                BoneMatrix @= PoseBone.matrix
 
             BoneSafeName = self.SafeName + "_" + \
                 Util.SafeName(Bone.name)
@@ -1150,7 +1150,7 @@ class ArmatureAnimationGenerator(GenericAnimationGenerator):
                 PoseMatrix = Matrix()
                 if Bone.parent:
                     PoseMatrix = Bone.parent.matrix.inverted()
-                PoseMatrix *= Bone.matrix
+                PoseMatrix @= Bone.matrix
 
                 Rotation = PoseMatrix.to_quaternion().normalized()
                 OldRotation = BoneAnimation.RotationKeys[-1] if \
@@ -1388,7 +1388,7 @@ class Util:
     # Make A compatible with B
     @staticmethod
     def CompatibleQuaternion(A, B):
-        if (A.normalized().conjugated() * B.normalized()).angle > pi:
+        if (A.normalized().conjugated() @ B.normalized()).angle > pi:
             return -A
         else:
             return A
