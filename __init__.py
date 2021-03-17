@@ -24,7 +24,7 @@ bl_info = {
     "version": (4, 0, 0),
     "blender": (2, 80, 0),
     "location": "File > Export > DirectX (.x)",
-    "warning": "Development version",
+    "warning": "",
     "description": "Export mesh vertices, UV's, materials, textures, "
                    "vertex colors, armatures, empties, and actions.",
     "wiki_url": "http://wiki.blender.org/index.php/Extensions:2.6/Py/"
